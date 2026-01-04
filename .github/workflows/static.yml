@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+
+<title>IknowSecret</title>
+
+<style>
+body{
+  font-family: Tahoma, sans-serif;
+  margin:0;
+  background: linear-gradient(135deg,#FFB6C1,#FF7F7F);
+  color:#333;
+}
+.container{
+  max-width: 700px;
+  margin: 40px auto;
+  background:#fff;
+  border-radius:20px;
+  padding:30px;
+  box-shadow:0 15px 30px rgba(0,0,0,0.2);
+  text-align:center;
+}
+button{
+  padding:12px 25px;
+  border-radius:30px;
+  border:none;
+  font-size:18px;
+  cursor:pointer;
+  background:#FF6B6B;
+  color:white;
+  transition:0.25s;
+}
+button:hover{
+  transform: translateY(-2px);
+  box-shadow:0 10px 20px rgba(0,0,0,0.2);
+}
+input{
+  width:90%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:12px;
+  border:1px solid #ccc;
+}
+.card{
+  background:#FFF1F2;
+  border-radius:15px;
+  padding:15px;
+  margin-top:15px;
+}
+.hidden{
+  display:none;
+}
+.title{
+  font-size:26px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<!-- หน้าเริ่ม -->
+<div class="container" id="startScreen">
+  <div class="title">🎲 IknowSecret</div>
+  <p>เกมคำลับแบบสุ่มบทบาท เล่นกับเพื่อนได้เลย</p>
+
+  <button onclick="gotoSetup()">เริ่มเล่น!</button>
+</div>
+
+<!-- หน้าใส่ข้อมูล -->
+<div class="container hidden" id="setupScreen">
+  <div class="title">🧑‍🤝‍🧑 ตั้งค่าผู้เล่น</div>
+
+  <div class="card">
+    <p>ใส่รายชื่อผู้เล่น (คั่นด้วย , )</p>
+    <input id="players" value="เอ,บี,ซี,ดี,ออย">
+  </div>
+
+  <br>
+  <button onclick="startGame()">สุ่มบทบาท & คำลับจากคลัง 500 คำ</button>
+</div>
+
+<!-- หน้าเล่นเกม -->
+<div class="container hidden" id="gameScreen">
+  <div class="title">🕹 ผลการสุ่ม</div>
+
+  <div id="result" class="card"></div>
+
+  <div id="secret" class="card hidden"></div>
+
+  <br>
+  <button onclick="reset()">เริ่มรอบใหม่</button>
+</div>
+
+
+<script>
+const WORD_LIST = [
+"ข้าวผัด","ข้าวมันไก่","ต้มยำ","ผัดไทย","ก๋วยเตี๋ยว","น้ำตก","ลาบ","ส้มตำ","หมูกระทะ",
+"ไก่ทอด","หมูปิ้ง","ซูชิ","เบอร์เกอร์","พิซซ่า","ไอศกรีม","ชานมไข่มุก","เค้ก","ขนมปัง",
+"โดนัท","ช็อกโกแลต","สเต็ก","สลัด","ข้าวเหนียวมะม่วง","เฟรนช์ฟรายส์","ปาท่องโก๋",
+"บัวลอย","ลอดช่อง","ทุเรียน","องุ่น","แอปเปิ้ล","ส้ม","มะม่วง","แตงโม","ฝรั่ง","เชอร์รี่",
+"มะพร้าว","น้ำส้ม","น้ำเปล่า","นม","กาแฟ","โกโก้","โอวัลติน","ขนมจีบ","ซาลาเปา","ราเมน",
+
+"สุนัข","แมว","ช้าง","ม้า","วัว","ควาย","หมู","ไก่","เป็ด","ปลา","นก","ยีราฟ","สิงโต","เสือ",
+"หมี","แพนด้า","จิ้งจก","ตุ๊กแก","กบ","งู","เต่า","ปลาโลมา","วาฬ","ลิง","กระต่าย",
+"หนู","ปู","กุ้ง","แมงมุม","ผีเสื้อ","เต่าทะเล","เพนกวิน","โคอาล่า","หมาป่า","ชะนี",
+
+"โทรศัพท์","คอมพิวเตอร์","โน้ตบุ๊ก","แท็บเล็ต","ทีวี","ตู้เย็น","เครื่องซักผ้า","เตารีด",
+"นาฬิกา","แว่นตา","กระเป๋า","รองเท้า","หมวก","เสื้อ","กางเกง","ผ้าเช็ดตัว","แปรงสีฟัน",
+"ยาสีฟัน","จาน","ชาม","แก้ว","ช้อน","ส้อม","มีด","โต๊ะ","เก้าอี้","โซฟา","เตียง",
+"ตู้เสื้อผ้า","หนังสือ","ปากกา","ดินสอ","ยางลบ","กระดาษ","รีโมต","หูฟัง","ลำโพง","กล้อง",
+
+"รถยนต์","มอเตอร์ไซค์","รถไฟ","เครื่องบิน","เรือ","รถบัส","รถแท็กซี่","รถไฟฟ้า","จักรยาน",
+"สเก็ตบอร์ด","สกู๊ตเตอร์","เรือดำน้ำ","รถบรรทุก","รถพยาบาล","รถดับเพลิง",
+
+"โรงเรียน","มหาวิทยาลัย","โรงพยาบาล","วัด","ห้างสรรพสินค้า","ตลาด","ร้านกาแฟ",
+"สวนสาธารณะ","ทะเล","ภูเขา","น้ำตก","สนามบิน","สนามกีฬา","โรงภาพยนตร์","สวนสัตว์",
+"พิพิธภัณฑ์","บ้าน","คอนโด","โรงแรม","รีสอร์ท","วัดพระแก้ว","สยาม","ไชน่าทาวน์"
+];
+
+let insider = "";
+let gm = "";
+let word = "";
+let step = 0;
+
+const startScreen = document.getElementById("startScreen");
+const setupScreen = document.getElementById("setupScreen");
+const gameScreen = document.getElementById("gameScreen");
+
+const playersInput = document.getElementById("players");
+
+const result = document.getElementById("result");
+const secret = document.getElementById("secret");
+
+function gotoSetup(){
+  startScreen.classList.add("hidden");
+  setupScreen.classList.remove("hidden");
+}
+
+function startGame(){
+
+  const players = playersInput.value.split(",").map(x=>x.trim()).filter(x=>x);
+
+  if(players.length < 3){
+    alert("ต้องมีผู้เล่นอย่างน้อย 3 คน");
+    return;
+  }
+
+  word = WORD_LIST[Math.floor(Math.random()*WORD_LIST.length)];
+  insider = players[Math.floor(Math.random()*players.length)];
+
+  do{
+    gm = players[Math.floor(Math.random()*players.length)];
+  } while(gm === insider);
+
+  step = 0;
+
+  result.innerHTML = `
+    <b>กดเพื่อเริ่มเปิดเผยบทบาท</b><br><br>
+    <button onclick="nextStep()">👉 คลิก</button>
+  `;
+
+  secret.classList.add("hidden");
+  secret.innerHTML = "";
+
+  setupScreen.classList.add("hidden");
+  gameScreen.classList.remove("hidden");
+}
+
+function nextStep(){
+  step++;
+
+  if(step === 1){
+    result.innerHTML = `
+      🎤 GM คือ: <b>${gm}</b><br><br>
+      <button onclick="nextStep()">👉 คลิกต่อ</button>
+    `;
+  }
+
+  else if(step === 2){
+    secret.classList.remove("hidden");
+    secret.innerHTML = `🔐 คำลับ (GM ดู): <b>${word}</b>`;
+    result.innerHTML = `
+      ✔ ให้ GM ดูคำก่อน<br><br>
+      <button onclick="nextStep()">👉 ต่อไป</button>
+    `;
+  }
+
+  else if(step === 3){
+    secret.classList.add("hidden");
+    result.innerHTML = `
+      🕵️ Insider คือ: <b>${insider}</b><br><br>
+      <button onclick="nextStep()">👉 คลิกต่อ</button>
+    `;
+  }
+
+  else if(step === 4){
+    secret.classList.remove("hidden");
+    secret.innerHTML = `🔐 คำลับ (Insider ดู): <b>${word}</b>`;
+    result.innerHTML = `
+      🎯 ทั้งหมดพร้อมเล่นแล้ว!<br><br>
+      <button onclick="reset()">เริ่มรอบใหม่</button>
+    `;
+  }
+}
+
+function reset(){
+  gameScreen.classList.add("hidden");
+  setupScreen.classList.remove("hidden");
+}
+</script>
+
+</body>
+</html>
